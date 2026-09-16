@@ -1,0 +1,5 @@
+# ANGEL GAME 运行依赖
+# 包版本按需升级；pywin32 仅 Windows 需要（打包与窗口 API 依赖）
+
+pywebview>=5.0
+pywin32>=306; sys_platform == "win32"

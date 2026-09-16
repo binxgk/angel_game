@@ -1,0 +1,36 @@
+# ----- Python -----
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.eggs/
+.venv/
+venv/
+env/
+
+# ----- PyInstaller 打包产物 -----
+build/
+dist/
+*.spec.bak
+
+# ----- 运行时数据（用户私有，不提交） -----
+data/
+history/
+*.db
+*.db-wal
+*.db-shm
+*.bak
+*.log
+config.json
+window_geometry.json
+assets/default_icon.png
+
+# ----- 系统 / 编辑器 -----
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+
+# ----- WorkBuddy 项目记忆（本地私有） -----
+.workbuddy/

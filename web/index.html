@@ -1,0 +1,1503 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ANGEL GAME</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Space+Grotesk:wght@400;500;600;700&display=swap');
+  :root {
+    /* 字体：Latin 用 Fraunces(衬线展示)/Space Grotesk(UI)，中文回退系统字 */
+    --font-ui: "Space Grotesk", -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+    --font-display: "Fraunces", "Songti SC", "STSong", Georgia, serif;
+    --font: var(--font-ui);
+
+    --radius-sm: 6px;
+    --radius-md: 12px;
+    --radius-lg: 18px;
+    --radius-xl: 24px;
+    --transition: .2s cubic-bezier(.4,0,.2,1);
+    --transition-smooth: .28s cubic-bezier(.25,.1,.25,1);
+    --transition-bounce: .32s cubic-bezier(.34,1.56,.64,1);
+    --ease-expo: cubic-bezier(0.16, 1, 0.3, 1);
+    --ease-quint: cubic-bezier(0.22, 1, 0.36, 1);
+
+    /* 暖象牙底 + 染色中性（向 Ember 暖橙微偏） */
+    --bg:            oklch(96% 0.012 85);
+    --bg-2:          oklch(93% 0.02 80);
+    --surface:       oklch(99% 0.004 85);
+    --surface-hover: oklch(97% 0.008 82);
+    --surface-2:     oklch(97% 0.008 82);
+
+    --border:        oklch(89% 0.012 80);
+    --border-visible:oklch(83% 0.018 78);
+    --border-strong: oklch(78% 0.02 76);
+    --border-2:      oklch(83% 0.018 78);
+
+    --text-primary:  oklch(26% 0.02 60);
+    --text-secondary:oklch(50% 0.015 70);
+    --text-muted:    oklch(64% 0.012 75);
+    --ink:           oklch(26% 0.02 60);
+
+    /* 唯一强调色：Ember 暖橙（刻意避开 AI 蓝紫） */
+    --accent:       oklch(64% 0.205 38);
+    --accent-hover: oklch(60% 0.20 38);
+    --accent-light: oklch(64% 0.205 38 / .12);
+    --accent-soft:  oklch(64% 0.205 38 / .12);
+    --accent-ink:   oklch(40% 0.14 38);
+
+    /* 完成态语义色：翡翠绿 */
+    --success:      oklch(70% 0.155 155);
+    --success-soft: oklch(70% 0.155 155 / .14);
+
+    --danger: oklch(58% 0.20 25);
+    --warning: oklch(75% 0.15 75);
+
+    /* 染色阴影（暖调，非纯黑） */
+    --shadow-sm: 0 1px 2px oklch(30% 0.05 60 / .06), 0 1px 1px oklch(30% 0.05 60 / .04);
+    --shadow-md: 0 6px 18px oklch(30% 0.06 60 / .10), 0 2px 6px oklch(30% 0.06 60 / .06);
+    --shadow-lg: 0 24px 60px oklch(28% 0.07 55 / .18), 0 8px 22px oklch(28% 0.07 55 / .10);
+
+    --overlay: oklch(20% 0.02 60 / .35);
+    --toast-bg: oklch(26% 0.02 60 / .92);
+    --cal-empty: oklch(89% 0.012 80);
+
+    --mx: 50%; --my: 30%;
+  }
+  /* 已移除一键深色：仅亮色（Aurora Ivory） */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { font-size: 15px; }
+  body {
+    font-family: var(--font); background: var(--bg); color: var(--text-primary);
+    display: flex; flex-direction: column; height: 100vh; overflow: hidden;
+    user-select: none; transition: background var(--transition), color var(--transition);
+  }
+
+  /* ===== 极光 mesh 背景（签名层） ===== */
+  .aurora {
+    position: fixed; inset: -20%; z-index: 0; pointer-events: none; opacity: .5;
+    background:
+      radial-gradient(40% 38% at 18% 22%, oklch(80% 0.12 50 / .55), transparent 70%),
+      radial-gradient(36% 34% at 82% 18%, oklch(82% 0.10 95 / .5), transparent 70%),
+      radial-gradient(44% 40% at 75% 82%, oklch(78% 0.09 150 / .42), transparent 72%),
+      radial-gradient(38% 36% at 22% 80%, oklch(84% 0.10 70 / .4), transparent 70%);
+    filter: blur(40px) saturate(120%);
+    animation: auroraDrift 26s ease-in-out infinite alternate;
+  }
+  @keyframes auroraDrift {
+    0%   { transform: translate3d(-2%, -1%, 0) rotate(0deg) scale(1.05); }
+    100% { transform: translate3d(3%, 2%, 0) rotate(6deg) scale(1.12); }
+  }
+  /* 跟随光标的柔光斑 */
+  .cursor-glow {
+    position: fixed; inset: 0; z-index: 1; pointer-events: none;
+    background: radial-gradient(420px 420px at var(--mx) var(--my),
+              oklch(85% 0.06 80 / .35), transparent 60%);
+    transition: background .12s linear;
+  }
+
+  .topbar {
+    display: flex; align-items: center; padding: 10px 20px;
+    background: oklch(99% 0.004 85 / .72);
+    backdrop-filter: saturate(180%) blur(20px);
+    -webkit-backdrop-filter: saturate(180%) blur(20px);
+    border-bottom: 1px solid color-mix(in oklch, var(--border) 60%, transparent);
+    gap: 12px; flex-shrink: 0; position: relative; z-index: 10;
+  }
+  .topbar-brand {
+    font-family: var(--font-display);
+    font-size: 19px; font-weight: 600; letter-spacing: .2px;
+    white-space: nowrap; color: var(--ink); transition: color var(--transition);
+    display: flex; align-items: center; gap: 9px;
+  }
+  .topbar-brand .spinning-ring {
+    width: 18px; height: 18px; border-radius: 50%; flex-shrink: 0;
+    border: 3px solid color-mix(in oklch, var(--accent) 22%, transparent);
+    border-top-color: var(--accent);
+    border-right-color: var(--accent);
+    animation: spin 1s linear infinite;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .topbar-brand .spinning-ring { animation-duration: 3s; }
+  }
+  .topbar-spacer { flex: 1; }
+  .topbar-search {
+    display: flex; align-items: center; width: 220px; max-width: 38vw; height: 36px;
+    background: var(--surface-2); border: 1px solid var(--border);
+    border-radius: 999px; padding: 0 13px;
+    transition: border-color .2s, box-shadow .2s, width .25s var(--ease-quint), background .2s;
+  }
+  .topbar-search:focus-within {
+    width: 300px;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 4px var(--accent-soft);
+    background: var(--surface);
+  }
+  .topbar-search svg {
+    width: 17px; height: 17px; fill: var(--text-muted); flex-shrink: 0;
+    transition: fill var(--transition), transform var(--transition);
+  }
+  .topbar-search:focus-within svg { fill: var(--accent); transform: scale(1.05); }
+  .topbar-search input {
+    flex: 1; background: none; border: none; outline: none;
+    font-size: 13px; color: var(--text-primary); margin-left: 8px;
+    font-family: var(--font);
+  }
+  .topbar-search input::placeholder { color: var(--text-muted); }
+  .icon-btn {
+    width: 36px; height: 36px; border-radius: 11px; border: 1px solid var(--border);
+    background: var(--surface-2); cursor: pointer; display: flex; align-items: center;
+    justify-content: center; transition: transform .15s var(--ease-quint), border-color .2s, background .2s, color .2s;
+    color: var(--ink);
+  }
+  .icon-btn:hover { border-color: var(--border-2); background: var(--bg-2); color: var(--accent-ink); }
+  .icon-btn:active { transform: scale(.93); transition-duration: .08s; }
+
+  .main-area {
+    flex: 1; overflow-y: auto; padding: 20px 24px;
+    position: relative; z-index: 2;
+  }
+  .grid {
+    display: grid; grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 16px;
+  }
+
+  /* ===== Tile ===== */
+  .tile {
+    background: var(--surface); border-radius: var(--radius-md);
+    border: 1.5px solid var(--border);
+    position: relative; overflow: hidden; cursor: pointer;
+    display: flex; flex-direction: column;
+    transition: transform .25s cubic-bezier(.4,0,.2,1),
+                border-color var(--transition),
+                box-shadow var(--transition),
+                opacity .2s ease;
+  }
+  .tile:hover {
+    border-color: var(--border-strong); transform: translateY(-3px);
+    box-shadow: var(--shadow-md);
+  }
+  .tile:active {
+    transform: translateY(-1px) scale(.98);
+    transition-duration: .08s;
+  }
+  .tile.selected {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-light), var(--shadow-md);
+  }
+  /* 平时安静：未启动磁贴无特殊高亮，仅「启动后」才出现绿环 */
+  .tile.launched {
+    border-color: var(--success);
+    box-shadow: 0 0 0 2px var(--success), var(--shadow-md), 0 0 18px oklch(70% 0.155 155 / .22);
+  }
+  .tile.launched:hover {
+    border-color: var(--success);
+    box-shadow: 0 0 0 3px var(--success), var(--shadow-lg);
+    transform: translateY(-3px);
+  }
+  .tile-launched-badge {
+    position: absolute; top: 8px; right: 8px; z-index: 3;
+    display: inline-flex; align-items: center; gap: 3px;
+    background: var(--success); color: #fff;
+    font-size: 10.5px; font-weight: 700; padding: 2px 8px; border-radius: 10px;
+    box-shadow: 0 2px 7px oklch(70% 0.155 155 / .45);
+    pointer-events: none; white-space: nowrap;
+  }
+  /* 未启动磁贴的角标默认隐藏（平时安静） */
+  .tile-pending-badge { display: none; }
+  .tile.manage-mode .tile-launched-badge { display: none; }
+  /* 待更新：muted 弱角标（左上角，无蓝环 / 无强高亮，契合「平时安静」） */
+  .tile-update-badge {
+    position: absolute; top: 8px; left: 8px; z-index: 3;
+    display: inline-flex; align-items: center; gap: 3px;
+    background: oklch(92% 0.05 55 / .9); color: oklch(50% 0.12 45);
+    font-size: 10px; font-weight: 600; padding: 2px 7px; border-radius: 10px;
+    border: 1px solid oklch(86% 0.06 50 / .65);
+    pointer-events: none; white-space: nowrap;
+  }
+  .tile.manage-mode .tile-update-badge { display: none; }
+  .tile-cover {
+    position: relative; height: 118px;
+    background-size: cover; background-position: center;
+    display: flex; align-items: center; justify-content: center;
+    transition: transform .35s cubic-bezier(.4,0,.2,1);
+    border-radius: var(--radius-md) var(--radius-md) 0 0;
+    overflow: hidden;
+  }
+  .tile:hover .tile-cover { transform: scale(1.06); }
+  .tile-cover.initial {
+    background: linear-gradient(160deg, var(--bg-2), var(--surface-2));
+  }
+  .tile-ph-icon {
+    width: 46px; height: 46px; opacity: .45;
+    fill: var(--text-muted); user-select: none;
+  }
+  .tile-info {
+    padding: 9px 12px 11px;
+    display: flex; flex-direction: column; align-items: flex-start; gap: 4px;
+    background: var(--surface-2);
+  }
+  .tile-play-icon {
+    position: absolute; top: 50%; left: 50%;
+    transform: translate(-50%,-50%);
+    width: 46px; height: 46px; opacity: 0;
+    fill: #fff; background: oklch(20% 0.02 60 / .5);
+    border-radius: 50%; padding: 11px; box-sizing: border-box;
+    backdrop-filter: blur(2px);
+    transition: opacity .2s ease, transform .25s cubic-bezier(.4,0,.2,1);
+  }
+  .tile:hover .tile-play-icon {
+    opacity: .95; transform: translate(-50%,-50%) scale(1.08);
+  }
+  .tile-name {
+    font-size: 13px; font-weight: 700; text-align: left;
+    max-width: 100%; overflow: hidden; text-overflow: ellipsis;
+    white-space: nowrap; color: var(--text-primary);
+  }
+  .tile-meta {
+    display: flex; align-items: center; gap: 6px;
+    font-size: 11.5px; color: var(--text-secondary);
+  }
+  .tile-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--text-muted); }
+  .tile-dot.active { background: var(--success); box-shadow: 0 0 6px var(--success); }
+  .tile-menu {
+    position: absolute; bottom: 8px; right: 8px;
+    width: 28px; height: 28px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--text-muted); cursor: pointer;
+    opacity: 0; transform: scale(.8);
+    transition: all .2s cubic-bezier(.4,0,.2,1);
+  }
+  .tile:hover .tile-menu { opacity: 1; transform: scale(1); }
+  .tile-menu:hover { background: oklch(20% 0.02 60 / .5); color: #fff; }
+
+  /* Manage checkbox */
+  .tile-check {
+    position: absolute; top: 8px; left: 8px;
+    width: 20px; height: 20px; border-radius: 50%;
+    border: 2px solid var(--accent); background: transparent;
+    display: flex; align-items: center; justify-content: center;
+    transition: all .2s cubic-bezier(.4,0,.2,1);
+    color: #fff; font-size: 12px;
+  }
+  .tile-check.checked { background: var(--accent); border-color: var(--accent); }
+  .manage-mode .tile-check { opacity: 1; }
+  .manage-mode .tile-check:not(.checked) { background: var(--accent-soft); }
+
+  /* ===== Bottom Bar ===== */
+  .bottombar {
+    display: flex; align-items: center; padding: 10px 20px;
+    background: oklch(99% 0.004 85 / .72);
+    backdrop-filter: saturate(180%) blur(20px);
+    -webkit-backdrop-filter: saturate(180%) blur(20px);
+    border-top: 1px solid color-mix(in oklch, var(--border) 60%, transparent);
+    flex-shrink: 0; gap: 10px; position: relative; z-index: 3;
+  }
+  .bottombar-left {
+    display: flex; align-items: center; gap: 8px;
+    color: var(--text-secondary); font-size: 13px;
+  }
+  .progress-bar {
+    width: 120px; height: 6px; border-radius: 3px;
+    background: var(--border); overflow: hidden;
+  }
+  .progress-bar-fill {
+    height: 100%; background: var(--accent); border-radius: 3px;
+    transition: width .3s ease;
+  }
+  .bottombar-spacer { flex: 1; }
+  .btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 8px 16px; border-radius: 12px; font-size: 13px;
+    font-weight: 600; font-family: var(--font); cursor: pointer;
+    border: 1px solid var(--border); background: var(--surface-2);
+    color: var(--ink); transition: all var(--transition);
+    white-space: nowrap;
+  }
+  .btn:hover { border-color: var(--border-2); background: var(--bg-2); }
+  .btn:active { transform: scale(.96); transition-duration: .08s; }
+  .btn:disabled { opacity: .45; cursor: not-allowed; }
+  .btn-primary {
+    background: var(--accent); color: #fff; border-color: transparent;
+    box-shadow: 0 6px 16px oklch(64% 0.205 38 / .35);
+  }
+  .btn-primary:hover {
+    background: var(--accent-hover); border-color: transparent;
+    box-shadow: 0 8px 20px oklch(64% 0.205 38 / .45);
+    transform: translateY(-1px); color: #fff;
+  }
+  .btn-primary:active { transform: translateY(0) scale(.96); }
+
+  /* Manage bar */
+  .manage-bar {
+    display: none; align-items: center; padding: 10px 20px;
+    background: var(--accent-soft); border-top: 1px solid var(--accent);
+    flex-shrink: 0; gap: 10px; position: relative; z-index: 3;
+  }
+  .manage-bar.visible { display: flex; }
+  .manage-bar-text { font-size: 13px; font-weight: 600; color: var(--accent-ink); }
+
+  /* Dialog overlay */
+  .overlay {
+    position: fixed; inset: 0; background: var(--overlay);
+    display: none; align-items: center; justify-content: center;
+    z-index: 100; backdrop-filter: blur(4px);
+    animation: fadeIn .15s ease;
+  }
+  .overlay.show { display: flex; }
+  @keyframes fadeIn { from{opacity:0} to{opacity:1} }
+
+  .dialog {
+    background: var(--surface); border-radius: var(--radius-lg);
+    width: 520px; max-width: 92vw; max-height: 88vh;
+    display: flex; flex-direction: column;
+    box-shadow: var(--shadow-lg);
+    animation: dialogIn .4s var(--ease-expo);
+    overflow: hidden;
+    border: 1px solid var(--border-visible);
+  }
+  @keyframes dialogIn {
+    from { opacity:0; transform: translateY(16px) scale(.97) }
+    to { opacity:1; transform: none }
+  }
+  .dialog-header {
+    padding: 20px 22px 12px;
+    display: flex; flex-direction: column; align-items: flex-start; gap: 12px;
+  }
+  .dialog-title {
+    font-family: var(--font-display); font-weight: 600; font-size: 19px;
+    color: var(--ink); letter-spacing: .2px;
+  }
+  .dialog-body { padding: 14px 22px; overflow-y: auto; flex: 1; }
+  .dialog-footer {
+    padding: 14px 22px 18px; display: flex; justify-content: flex-end; gap: 10px;
+    border-top: 1px solid color-mix(in oklch, var(--border) 60%, transparent);
+  }
+
+  .form-row {
+    display: flex; align-items: center; gap: 10px; margin-bottom: 12px;
+  }
+  .form-input {
+    flex: 1; height: 40px; padding: 0 12px;
+    border: 1px solid var(--border-strong); border-radius: 10px;
+    background: var(--surface-2); color: var(--ink);
+    font-size: 14px; font-family: var(--font); outline: none;
+    transition: border-color .2s, box-shadow .2s, background .2s;
+  }
+  .form-input:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 4px var(--accent-soft);
+    background: var(--surface);
+  }
+  .form-input.error {
+    border-color: var(--danger);
+    box-shadow: 0 0 0 3px oklch(58% 0.20 25 / .14);
+  }
+  .btn-browse {
+    padding: 0 14px; height: 40px; border-radius: 10px;
+    border: 1px solid var(--border-strong); background: var(--surface-2);
+    color: var(--ink); font-size: 13px; font-family: var(--font);
+    cursor: pointer; display: inline-flex; align-items: center; gap: 6px;
+    transition: all var(--transition); white-space: nowrap;
+  }
+  .btn-browse:hover { border-color: var(--accent); color: var(--accent-ink); background: var(--bg-2); }
+  .btn-browse:active { transform: scale(.96); transition-duration: .08s; }
+
+  .btn-dialog {
+    padding: 9px 20px; border-radius: var(--radius-md); font-size: 13.5px;
+    font-weight: 600; font-family: var(--font); cursor: pointer;
+    border: 1px solid var(--border); background: var(--surface-2); color: var(--ink);
+    transition: all var(--transition);
+  }
+  .btn-dialog-cancel { background: transparent; color: var(--text-secondary); }
+  .btn-dialog-cancel:hover { background: var(--bg-2); color: var(--ink); }
+  .btn-dialog-confirm {
+    background: var(--accent); color: #fff; border-color: transparent;
+    box-shadow: 0 4px 12px oklch(64% 0.205 38 / .3);
+  }
+  .btn-dialog-confirm:hover {
+    background: var(--accent-hover); box-shadow: 0 6px 16px oklch(64% 0.205 38 / .4);
+  }
+  .btn-dialog-confirm:disabled {
+    opacity: .6; cursor: not-allowed; box-shadow: none; transform: none;
+  }
+
+  .section-card {
+    background: var(--surface-2); border-radius: var(--radius-md);
+    border: 1px solid var(--border); padding: 12px;
+    transition: all var(--transition);
+  }
+  .section-card:hover {
+    border-color: var(--border-strong);
+    box-shadow: var(--shadow-sm);
+  }
+  .section-title {
+    font-size: 12px; color: var(--text-secondary); margin: 14px 0 8px;
+    font-weight: 600; letter-spacing: .2px;
+  }
+
+  .stats-dialog .dialog { width: 700px; }
+  .streak-card {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px;
+    margin-bottom: 16px;
+  }
+  .streak-card > div {
+    background: var(--surface-2); border: 1px solid var(--border);
+    border-radius: 14px; padding: 14px; text-align: center;
+  }
+  .streak-num {
+    font-family: var(--font-display); font-weight: 600; font-size: 26px;
+    background: linear-gradient(120deg, var(--accent), oklch(60% 0.18 45));
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+  .streak-label { font-size: 11px; color: var(--text-secondary); margin-top: 2px; }
+
+  .cal-nav {
+    display: flex; align-items: center; justify-content: center; gap: 16px;
+    margin: 6px 0;
+  }
+  .cal-month-title {
+    font-family: var(--font-display); font-size: 17px; font-weight: 600; cursor: pointer;
+    padding: 4px 16px; border-radius: 20px; transition: all var(--transition);
+  }
+  .cal-month-title:hover { background: var(--accent-soft); color: var(--accent-ink); }
+  .cal-grid {
+    display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px;
+    margin-bottom: 12px;
+  }
+  .cal-head {
+    font-size: 11.5px; color: var(--text-muted); text-align: center;
+    padding: 4px 0; font-weight: 600;
+  }
+  .cal-cell {
+    aspect-ratio: 1; border-radius: 10px; display: flex; align-items: center;
+    justify-content: center; font-size: 13px; cursor: pointer;
+    border: 1px solid transparent; color: var(--ink);
+    transition: transform .15s var(--ease-quint), border-color .2s, background .2s;
+    position: relative;
+  }
+  .cal-cell:hover { transform: translateY(-2px); border-color: var(--border-2); }
+  .cal-cell.empty { background: transparent; cursor: default; }
+  .cal-cell.empty:hover { transform: none; }
+  .cal-cell.today { border-color: var(--accent); font-weight: 700; }
+  .cal-cell.sel { box-shadow: 0 0 0 2px var(--accent); }
+  .cal-legend { display: flex; align-items: center; gap: 8px; font-size: 11px; color: var(--text-secondary); margin-bottom: 12px; }
+  .cal-swatch { width: 14px; height: 14px; border-radius: 4px; }
+
+  .year-grid {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px;
+    padding: 8px 0;
+  }
+  .month-card {
+    background: var(--surface-2); border-radius: var(--radius-md);
+    padding: 10px; cursor: pointer; transition: all var(--transition);
+    border: 1.5px solid transparent;
+  }
+  .month-card:hover { border-color: var(--accent); transform: translateY(-2px); box-shadow: var(--shadow-sm); }
+  .month-card-name { font-size: 13px; font-weight: 600; text-align: center; margin-bottom: 6px; }
+  .month-mini-cal { display: grid; grid-template-columns: repeat(7, 1fr); gap: 1px; }
+  .month-mini-cal .mcell {
+    aspect-ratio: 1; border-radius: 2px; font-size: 8.5px;
+    display: flex; align-items: center; justify-content: center;
+  }
+
+  .detail-panel {
+    background: var(--surface-2); border-radius: var(--radius-md);
+    padding: 12px 16px; min-height: 120px; margin-top: 8px;
+    border: 1px solid var(--border);
+  }
+  .detail-empty { color: var(--text-muted); font-size: 13px; }
+  .detail-item {
+    display: flex; align-items: center; gap: 8px; padding: 5px 0;
+    font-size: 13px;
+  }
+  .detail-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+
+  .drag-overlay {
+    position: fixed; inset: 0; background: var(--accent-soft);
+    display: none; align-items: center; justify-content: center;
+    z-index: 200; flex-direction: column; gap: 12px;
+    border: 3px dashed var(--accent); margin: 20px; border-radius: var(--radius-lg);
+  }
+  .drag-overlay.show { display: flex; animation: fadeIn .15s ease; }
+  .drag-overlay svg { width: 48px; height: 48px; fill: var(--accent); }
+  .drag-overlay p { font-size: 16px; font-weight: 600; color: var(--accent-ink); }
+
+  .toast {
+    position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%) translateY(18px);
+    background: var(--toast-bg); color: var(--surface); padding: 10px 22px;
+    border-radius: 999px; font-size: 13.5px; font-weight: 600;
+    opacity: 0; transition: all .3s cubic-bezier(.4,0,.2,1); z-index: 300;
+    pointer-events: none; font-family: var(--font);
+    box-shadow: var(--shadow-lg);
+    backdrop-filter: blur(12px);
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  .tag-chip {
+    display: inline-block; padding: 2px 8px; border-radius: 10px;
+    font-size: 10.5px; font-weight: 600; background: var(--accent-soft);
+    color: var(--accent-ink); margin: 2px;
+  }
+  .tags-row { display: flex; flex-wrap: wrap; justify-content: center; gap: 3px; }
+
+  .empty-state {
+    display: flex; flex-direction: column; align-items: center;
+    justify-content: center; height: 100%; color: var(--text-muted); gap: 10px;
+  }
+  .empty-state svg { width: 56px; height: 56px; fill: var(--text-muted); opacity: .4; }
+  .empty-state p { font-size: 15px; }
+
+  .loading-mask {
+    position: fixed; inset: 0; background: var(--overlay);
+    display: none; align-items: center; justify-content: center;
+    z-index: 250; flex-direction: column; gap: 12px;
+  }
+  .loading-mask.show { display: flex; }
+  .loading-spinner {
+    width: 36px; height: 36px; border-radius: 50%;
+    border: 3px solid var(--border-strong);
+    border-top-color: var(--accent);
+    animation: spin .8s linear infinite;
+  }
+  .loading-text {
+    color: var(--surface); font-size: 13px;
+    padding: 6px 14px; background: oklch(20% 0.02 60 / .55);
+    border-radius: 999px; backdrop-filter: blur(8px);
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .settings-hint {
+    font-size: 12px; color: var(--text-secondary); margin-bottom: 10px;
+    padding: 8px 12px; background: var(--surface-2); border-radius: var(--radius-sm);
+    border: 1px solid var(--border);
+  }
+
+  /* ctx menu */
+  .ctx-menu {
+    position: fixed; min-width: 160px; background: var(--surface);
+    border: 1px solid var(--border-visible); border-radius: var(--radius-md);
+    box-shadow: var(--shadow-lg); padding: 6px; z-index: 320; display: none;
+  }
+  .ctx-menu.show { display: block; animation: fadeIn .12s ease; }
+  .ctx-item {
+    padding: 9px 12px; border-radius: var(--radius-sm); font-size: 13.5px;
+    cursor: pointer; display: flex; align-items: center; gap: 8px;
+    color: var(--ink); transition: background var(--transition);
+  }
+  .ctx-item:hover { background: var(--surface-2); color: var(--accent-ink); }
+  .ctx-item.danger:hover { background: oklch(58% 0.20 25 / .1); color: var(--danger); }
+  /* 更新检查面板列表 */
+  .update-row {
+    display: flex; align-items: center; gap: 12px; padding: 11px 4px;
+    border-bottom: 1px solid var(--border);
+  }
+  .update-row:last-child { border-bottom: none; }
+  .update-row-main { flex: 1; min-width: 0; }
+  .update-row-name { font-size: 14px; font-weight: 700; color: var(--text-primary); }
+  .update-row-meta { font-size: 12px; color: var(--text-secondary); margin-top: 2px; }
+</style>
+</head>
+<body>
+<!-- 极光 mesh 背景 + 跟随光标光斑（签名层） -->
+<div class="aurora"></div>
+<div class="cursor-glow"></div>
+
+<!-- ====== TOP BAR ====== -->
+<div class="topbar">
+  <span class="topbar-brand"><span class="spinning-ring"></span>ANGEL GAME</span>
+  <div class="topbar-spacer"></div>
+  <div class="topbar-search">
+    <svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0016 9.5 6.5 6.5 0 109.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+    <input type="text" placeholder="搜索游戏..." id="searchInput" oninput="onSearchInput()">
+  </div>
+  <button class="icon-btn" onclick="openStats()" title="统计与热力图">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM9 17H7v-7h2v7zm4 0h-2V7h2v10zm4 0h-2v-4h2v4z"/></svg>
+  </button>
+  <button class="icon-btn" onclick="openSettings()" title="设置">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M19.14 12.94c.04-.31.06-.63.06-.94 0-.31-.02-.63-.06-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.04.31-.06.63-.06.94s.02.63.06.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>
+  </button>
+</div>
+
+<!-- ====== MAIN GRID ====== -->
+<div class="main-area">
+  <div class="grid" id="gameGrid"></div>
+</div>
+
+<!-- ====== MANAGE BAR ====== -->
+<div class="manage-bar" id="manageBar">
+  <span class="manage-bar-text" id="manageCount">已选 0 项</span>
+  <div style="flex:1"></div>
+  <button class="btn" onclick="toggleManage()">取消</button>
+  <button class="btn btn-primary" id="batchDelBtn" onclick="batchDelete()" disabled>隐藏选中</button>
+  <button class="btn" id="batchDelPermanentBtn" onclick="batchDeletePermanent()" disabled style="background:var(--danger);border-color:var(--danger);color:#fff">彻底删除</button>
+</div>
+
+<!-- ====== BOTTOM BAR ====== -->
+<div class="bottombar">
+  <div class="bottombar-left">
+    <svg viewBox="0 0 24 24" width="17" height="17" fill="currentColor"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM9 17H7v-7h2v7zm4 0h-2V7h2v10zm4 0h-2v-4h2v4z"/></svg>
+    <span id="todayProgress">今日进度：0 / 0 已启动</span>
+  </div>
+  <div class="bottombar-spacer"></div>
+  <button class="btn" id="updateBtn" onclick="openUpdatePanel()" disabled>更新检查 (0)</button>
+  <button class="btn" onclick="toggleManage()">批量管理</button>
+  <button class="btn btn-primary" onclick="openAddDialog()">＋ 添加</button>
+</div>
+
+<!-- ====== ADD / EDIT DIALOG ====== -->
+<div class="overlay" id="addOverlay" onclick="if(event.target===this)closeAddDialog()">
+  <div class="dialog">
+    <div class="dialog-header">
+      <div class="dialog-title" id="addTitle">添加游戏</div>
+    </div>
+    <div class="dialog-body">
+      <div class="settings-hint">💡 提示：也可直接把 .exe 文件拖进主窗口快速添加</div>
+      <div class="section-title">封面预览</div>
+      <div class="section-card" style="display:flex;align-items:center;gap:14px">
+        <div id="addCoverPreview" style="width:96px;height:96px;border-radius:12px;background:var(--bg);border:1.5px dashed var(--border-strong);display:flex;align-items:center;justify-content:center;overflow:hidden;transition:all .2s ease">
+          <span style="font-size:11px;color:var(--text-muted);text-align:center;padding:4px">自动取图标</span>
+        </div>
+        <div style="flex:1">
+          <input class="form-input" id="addCover" placeholder="自定义封面（可选，png/jpg 路径）" style="margin-bottom:10px">
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <button class="btn-browse" onclick="pickCover()">🖼️ 选择封面</button>
+            <button class="btn-browse" onclick="clearCoverPreview()" style="border-color:var(--danger);color:var(--danger)">清空封面</button>
+          </div>
+        </div>
+      </div>
+      <div class="section-title">基本信息</div>
+      <div class="section-card">
+        <div class="form-row">
+          <input class="form-input" id="addExe" placeholder="启动程序路径（点浏览选择）">
+          <button class="btn-browse" onclick="pickExe()">📂 浏览</button>
+        </div>
+        <input class="form-input" id="addName" placeholder="游戏名称" style="margin-bottom:12px">
+      </div>
+      <div class="section-title">高级选项</div>
+      <div class="section-card">
+        <div class="form-row">
+          <input class="form-input" id="addBody" placeholder="游戏本体（可选，留空用启动程序）">
+          <button class="btn-browse" onclick="pickBody()">📂 浏览</button>
+        </div>
+        <div class="form-row">
+          <input class="form-input" id="addLauncher" placeholder="启动器路径（可选，用于检查更新）">
+          <button class="btn-browse" onclick="pickLauncher()">📂 浏览</button>
+        </div>
+        <input class="form-input" id="addTags" placeholder="分类 / 标签（逗号分隔，可选）">
+      </div>
+    </div>
+    <div class="dialog-footer">
+      <button class="btn-dialog btn-dialog-cancel" onclick="closeAddDialog()">取消</button>
+      <button class="btn-dialog btn-dialog-confirm" id="addConfirmBtn" onclick="confirmAdd()" disabled>添加</button>
+    </div>
+  </div>
+</div>
+
+<!-- ====== SETTINGS DIALOG ====== -->
+<div class="overlay" id="settingsOverlay" onclick="if(event.target===this)closeSettings()">
+  <div class="dialog">
+    <div class="dialog-header">
+      <div class="dialog-title">设置</div>
+    </div>
+    <div class="dialog-body">
+      <div class="section-title">窗口行为</div>
+      <div class="section-card">
+        <label style="display:flex;align-items:center;gap:8px;font-size:13.5px;cursor:pointer;color:var(--text-primary)">
+          <input type="checkbox" id="topCheck"> 窗口置顶
+        </label>
+      </div>
+      <div class="section-title">外观</div>
+      <div class="section-card">
+        <div class="form-row">
+          <input type="hidden" id="settingTheme" value="light">
+          <input class="form-input" id="settingCols" value="5" style="width:90px" placeholder="磁贴列数">
+        </div>
+      </div>
+    </div>
+    <div class="dialog-footer">
+      <button class="btn-dialog btn-dialog-cancel" onclick="closeSettings()">取消</button>
+      <button class="btn-dialog btn-dialog-confirm" onclick="saveSettings()">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- ====== STATS DIALOG ====== -->
+<div class="overlay stats-dialog" id="statsOverlay" onclick="if(event.target===this)closeStats()">
+  <div class="dialog" style="width:700px">
+    <div class="dialog-header">
+      <div class="dialog-title">统计 · 连续游玩与日历</div>
+    </div>
+    <div class="dialog-body" id="statsBody"></div>
+    <div class="dialog-footer">
+      <button class="btn-dialog btn-dialog-cancel" onclick="closeStats()">关闭</button>
+    </div>
+  </div>
+</div>
+
+<!-- ====== DRAG OVERLAY ====== -->
+<div class="drag-overlay" id="dragOverlay">
+  <svg viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+  <p>拖放 .exe 文件到这里添加游戏</p>
+</div>
+
+<!-- ====== CTX MENU ====== -->
+<div class="ctx-menu" id="ctxMenu">
+  <div class="ctx-item" onclick="ctxEdit()">✏️ 编辑</div>
+  <div class="ctx-item" onclick="ctxOpenFolder()">📁 打开所在目录</div>
+  <div class="ctx-item danger" onclick="ctxHide()">🙈 隐藏</div>
+  <div class="ctx-item danger" onclick="ctxDelete()">🗑️ 删除</div>
+</div>
+
+<!-- ====== UPDATE PANEL ====== -->
+<div class="overlay" id="updatePanel" onclick="if(event.target===this)closeUpdatePanel()">
+  <div class="dialog" style="width:480px">
+    <div class="dialog-header">
+      <div class="dialog-title">待检查更新的游戏</div>
+    </div>
+    <div class="dialog-body">
+      <div class="settings-hint">💡 这些游戏已配置启动器且超过检查周期，点「检查」会通过启动器联网检查更新。</div>
+      <div id="updatePanelList"></div>
+    </div>
+    <div class="dialog-footer">
+      <button class="btn-dialog btn-dialog-cancel" onclick="closeUpdatePanel()">关闭</button>
+      <button class="btn-dialog btn-dialog-confirm" id="updateAllBtn" onclick="checkAllUpdates()">全部检查</button>
+    </div>
+  </div>
+</div>
+
+<!-- ====== LOADING ====== -->
+<div class="loading-mask show" id="loadingMask">
+  <div class="loading-spinner"></div>
+  <div class="loading-text" id="loadingText">正在加载 ANGEL GAME...</div>
+</div>
+
+<!-- ====== TOAST ====== -->
+<div class="toast" id="toast"></div>
+
+<script>
+const $ = id => document.getElementById(id);
+const raw = id => $(id).value;
+const val = id => $(id).value.trim();
+
+/* 跟随光标的柔光斑（Aurora Ivory 签名层） */
+const _root = document.documentElement;
+addEventListener('pointermove', e => {
+  _root.style.setProperty('--mx', e.clientX + 'px');
+  _root.style.setProperty('--my', e.clientY + 'px');
+}, { passive: true });
+
+let api = null;
+let state = { games: [], today: {launched:0, total:0}, settings:{}, updateNeeded:0, manageMode:false, selectedIds:new Set(), searchQ:'' };
+let editId = null;            // 编辑模式下的游戏 id（null = 新增）
+let ctxId = null;             // 右键菜单对应的游戏 id
+let loadingTimer = null;
+
+function showLoading(msg, duration=1000) {
+  $('loadingMask').classList.add('show');
+  $('loadingText').textContent = msg || '正在处理...';
+  clearTimeout(loadingTimer);
+  loadingTimer = setTimeout(() => $('loadingMask').classList.remove('show'), duration);
+}
+function showToast(msg) {
+  const t = $('toast'); t.textContent = msg; t.classList.add('show');
+  clearTimeout(window.__toastTimer);
+  window.__toastTimer = setTimeout(() => t.classList.remove('show'), 2400);
+}
+function applyTheme(theme) {
+  document.documentElement.dataset.theme = theme || 'dark';
+  const sel = $('settingTheme'); if (sel) sel.value = theme || 'dark';
+}
+function applyColumns(n) {
+  const cols = Math.max(2, Math.min(10, parseInt(n, 10) || 5));
+  $('gameGrid').style.gridTemplateColumns = `repeat(${cols}, minmax(0, 1fr))`;
+}
+
+/* ===== 初始化（健壮版：兼容 ready 事件已触发 / 未触发，以及 API 注入失败）===== */
+let _booted = false;
+function waitForApi(timeoutMs = 10000) {
+  return new Promise((resolve, reject) => {
+    const t0 = Date.now();
+    (function poll() {
+      if (window.pywebview && window.pywebview.api) return resolve(window.pywebview.api);
+      if (Date.now() - t0 > timeoutMs)
+        return reject(new Error('pywebview API 未就绪（可能 WebView2 运行时缺失或 JS 注入失败）'));
+      setTimeout(poll, 50);
+    })();
+  });
+}
+function showFatal(msg) {
+  let box = document.getElementById('fatalBox');
+  if (!box) {
+    box = document.createElement('div');
+    box.id = 'fatalBox';
+    box.style.cssText = 'position:fixed;inset:0;z-index:999;display:flex;align-items:center;'
+      + 'justify-content:center;background:var(--overlay);backdrop-filter:blur(4px);padding:24px';
+    document.body.appendChild(box);
+  }
+  box.innerHTML = '<div style="max-width:440px;background:var(--surface);border-radius:16px;padding:22px;'
+    + 'box-shadow:var(--shadow-lg);border:1px solid var(--border-visible);text-align:center">'
+    + '<div style="font-size:15px;font-weight:700;color:var(--text-primary);margin-bottom:8px">初始化失败</div>'
+    + '<div style="font-size:13px;color:var(--text-secondary);line-height:1.6">'
+    + (msg || '未知错误') + '</div></div>';
+}
+async function boot() {
+  if (_booted) return;
+  _booted = true;
+  try {
+    api = await waitForApi();
+  } catch (e) {
+    showFatal(e.message);
+    showToast('初始化失败：' + e.message);
+    console.error(e);
+    return;
+  }
+  try {
+    await init();
+  } finally {
+    // 首屏数据就绪（或失败），收起初始加载遮罩
+    $('loadingMask').classList.remove('show');
+  }
+}
+async function init() {
+  try {
+    const data = await api.load();
+    state.games = data.games || [];
+    state.today = data.today || {launched:0, total:0};
+    state.settings = data.settings || {};
+    state.updateNeeded = data.update_needed_count || 0;
+    applyTheme(state.settings.theme);
+    applyColumns(state.settings.grid_columns);
+    $('topCheck').checked = !!state.settings.always_on_top;
+    renderGrid();
+    renderBottom();
+    // 首屏渲染后立即异步懒加载未缓存封面，避免阻塞初始加载
+    lazyLoadCovers();
+  } catch (e) {
+    showToast('加载失败：' + e);
+    console.error(e);
+  }
+}
+window.addEventListener('pywebviewready', boot);
+if (document.readyState === 'loading')
+  document.addEventListener('DOMContentLoaded', boot);
+else
+  boot();
+
+async function reload() {
+  if (!api) return;
+  const data = await api.load();
+  state.games = data.games || [];
+  state.today = data.today || {launched:0, total:0};
+  state.updateNeeded = data.update_needed_count || 0;
+  renderGrid();
+  renderBottom();
+  lazyLoadCovers();
+}
+
+/* ===== 懒加载封面：首屏后异步提取未缓存图标，就地更新磁贴，不重绘整页 ===== */
+let _coversLoading = false;
+async function lazyLoadCovers() {
+  if (!api || _coversLoading) return;
+  _coversLoading = true;
+  try {
+    const pending = state.games.filter(g => !g.cover);
+    for (const g of pending) {
+      try {
+        const r = await api.cover_for(g.id);
+        if (r && r.cover) {
+          g.cover = r.cover;
+          const tile = document.querySelector(`.tile[data-id="${g.id}"]`);
+          const cover = tile && tile.querySelector('.tile-cover');
+          if (cover) {
+            cover.style.backgroundImage = `url('${r.cover}')`;
+            cover.classList.remove('initial');
+            const ini = cover.querySelector('.tile-initial');
+            if (ini) ini.remove();
+          }
+        }
+      } catch (e) { /* 单个封面失败不影响其余 */ }
+    }
+  } finally {
+    _coversLoading = false;
+  }
+}
+
+/* ===== 网格 ===== */
+function onSearchInput() {
+  state.searchQ = val('searchInput');
+  renderGrid();
+}
+function renderGrid() {
+  const el = $('gameGrid');
+  const q = (state.searchQ || '').toLowerCase();
+  const filtered = state.games.filter(g => !q || (g.name||'').toLowerCase().includes(q));
+  if (filtered.length === 0) {
+    el.innerHTML = `<div class="empty-state"><svg viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg><p>还没有游戏，点击底部「+ 添加」或拖入 exe 文件</p></div>`;
+    return;
+  }
+  el.innerHTML = filtered.map(g => `
+    <div class="tile ${g.launched_today?'launched':''} ${!g.launched_today?'pending':''} ${state.selectedIds.has(g.id)?'selected':''} ${state.manageMode?'manage-mode':''}"
+         onclick="${state.manageMode?`toggleSel(${g.id})`:`launchGame(${g.id})`}"
+         data-id="${g.id}">
+      ${state.manageMode?`<div class="tile-check ${state.selectedIds.has(g.id)?'checked':''}">${state.selectedIds.has(g.id)?'✓':''}</div>`:''}
+      ${g.launched_today?`<div class="tile-launched-badge">✓ 今天</div>`:''}
+      ${!g.launched_today?`<div class="tile-pending-badge">待启动</div>`:''}
+      ${g.overdue?`<div class="tile-update-badge">待更新</div>`:''}
+      <div class="tile-cover ${g.cover?'':'initial'}" ${g.cover?`style="background-image:url('${g.cover}')"`:''}>
+        ${g.cover?'':`<svg class="tile-ph-icon" viewBox="0 0 24 24"><path d="M21 6H3a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h3l3-3h6l3 3h3a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2zM8 13H6v2H5v-2H3v-1h2V9h1v2h2v1zm6.5 1.5a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zm3-3a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3z"/></svg>`}
+        <svg class="tile-play-icon" viewBox="0 0 24 24" fill="#fff"><path d="M8 5v14l11-7z"/></svg>
+      </div>
+      <div class="tile-info">
+        <div class="tile-name">${escapeHtml(g.name)}</div>
+        ${g.tags&&g.tags.length?`<div class="tags-row">${g.tags.map(t=>`<span class="tag-chip">${escapeHtml(t)}</span>`).join('')}</div>`:''}
+        <div class="tile-meta">
+          <div class="tile-dot ${g.launched_today?'active':''}"></div>
+          <span>${g.launched_today?'今天':(g.date?String(g.date).split(' ')[0]:'')}</span>
+        </div>
+      </div>
+      <div class="tile-menu" onclick="event.stopPropagation();showTileMenu(${g.id},'${escapeAttr(g.name)}')">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/></svg>
+      </div>
+    </div>
+  `).join('');
+  updatePendingCounter();
+}
+function renderBottom() {
+  const t = state.today || {launched:0, total:0};
+  $('todayProgress').textContent = `今日进度：${t.launched} / ${t.total} 已启动`;
+  const n = state.updateNeeded || 0;
+  const ub = $('updateBtn');
+  if (ub) { ub.textContent = `更新检查 (${n})`; ub.disabled = n === 0; }
+  updatePendingCounter();
+}
+function updatePendingCounter() {
+  const p = (state.games || []).filter(g => !g.launched_today).length;
+  const num = $('pendingNum'); if (num) num.textContent = p;
+  const c = $('pendingCounter'); if (c) c.classList.toggle('done', p === 0);
+}
+
+function escapeHtml(s){ return String(s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function escapeAttr(s){ return String(s||'').replace(/'/g, "\\'"); }
+
+/* ===== 启动 ===== */
+async function launchGame(id) {
+  const g = state.games.find(x => x.id === id);
+  if (!g) return;
+  try {
+    const r = await api.launch(id);
+    if (r.ok) {
+      g.launched_today = r.launched_today;
+      state.today = r.today || state.today;
+      showToast(`已启动：${g.name||''}`);
+      renderGrid(); renderBottom();
+    } else {
+      showToast('启动失败：' + (r.detail || ''));
+    }
+  } catch (e) { showToast('启动出错：' + e); }
+}
+
+/* ===== 批量管理 ===== */
+function toggleSel(id) {
+  if (state.selectedIds.has(id)) state.selectedIds.delete(id); else state.selectedIds.add(id);
+  $('manageCount').textContent = `已选 ${state.selectedIds.size} 项`;
+  $('batchDelBtn').disabled = state.selectedIds.size === 0;
+  $('batchDelPermanentBtn').disabled = state.selectedIds.size === 0;
+  renderGrid();
+}
+function toggleManage() {
+  state.manageMode = !state.manageMode;
+  if (!state.manageMode) state.selectedIds.clear();
+  $('manageBar').classList.toggle('visible', state.manageMode);
+  $('manageCount').textContent = `已选 ${state.selectedIds.size} 项`;
+  $('batchDelBtn').disabled = state.selectedIds.size === 0;
+  $('batchDelPermanentBtn').disabled = state.selectedIds.size === 0;
+  renderGrid();
+}
+async function batchDelete() {
+  if (state.selectedIds.size === 0) return;
+  showLoading('正在隐藏选中游戏...', 900);
+  try {
+    const r = await api.hide_games([...state.selectedIds]);
+    showToast(`已隐藏 ${r.count||0} 个游戏`);
+    state.selectedIds.clear();
+    toggleManage();
+    await reload();
+  } catch (e) { showToast('隐藏失败：' + e); }
+}
+async function batchDeletePermanent() {
+  if (state.selectedIds.size === 0) return;
+  if (!confirm(`确定彻底删除选中的 ${state.selectedIds.size} 个游戏吗？此操作不可恢复！`)) return;
+  showLoading('正在删除选中游戏...', 900);
+  try {
+    let n = 0;
+    for (const id of [...state.selectedIds]) {
+      const r = await api.delete_game(id);
+      if (r.ok) n++;
+    }
+    showToast(`已删除 ${n} 个游戏`);
+    state.selectedIds.clear();
+    toggleManage();
+    await reload();
+  } catch (e) { showToast('删除失败：' + e); }
+}
+
+/* ===== 添加 / 编辑 ===== */
+function updateAddButtonState() {
+  const ok = !!val('addExe') && !!val('addName');
+  $('addConfirmBtn').textContent = editId ? '保存' : '添加';
+  $('addConfirmBtn').disabled = !ok;
+}
+function openAddDialog(pre) {
+  editId = pre && pre.id ? pre.id : null;
+  $('addTitle').textContent = editId ? '编辑游戏' : '添加游戏';
+  $('addExe').value = pre && pre.exe_path ? pre.exe_path : '';
+  $('addName').value = pre && pre.name ? pre.name : '';
+  $('addBody').value = (pre && pre.direct_exe_path && pre.direct_exe_path !== (pre.exe_path||'')) ? pre.direct_exe_path : '';
+  $('addTags').value = pre && pre.tags ? pre.tags.join(',') : '';
+  $('addLauncher').value = pre && pre.launcher_path ? pre.launcher_path : '';
+  $('addCover').value = '';
+  renderCoverPreview(pre && pre.cover ? pre.cover : '');
+  $('addOverlay').classList.add('show');
+  updateAddButtonState();
+}
+function closeAddDialog() {
+  $('addOverlay').classList.remove('show');
+  editId = null;
+}
+async function pickExe() {
+  const p = await api.pick_file('exe');
+  if (p) {
+    $('addExe').value = p;
+    if (!val('addName')) $('addName').value = p.split(/[\\/]/).pop().replace(/\.[^.]+$/, '');
+    updateAddButtonState();
+  }
+}
+async function pickBody() {
+  const p = await api.pick_file('exe');
+  if (p) { $('addBody').value = p; }
+}
+async function pickLauncher() {
+  const p = await api.pick_file('exe');
+  if (p) { $('addLauncher').value = p; }
+}
+async function pickCover() {
+  const p = await api.pick_file('img');
+  if (p) { $('addCover').value = p; renderCoverPreview(p); }
+}
+function renderCoverPreview(src) {
+  const el = $('addCoverPreview');
+  if (!src) {
+    el.innerHTML = '<span style="font-size:11px;color:var(--text-muted);text-align:center;padding:4px">自动取图标</span>';
+    el.style.borderStyle = 'dashed';
+    return;
+  }
+  el.style.borderStyle = 'solid';
+  const isData = src.startsWith('data:image');
+  const disp = isData ? src : 'file:///' + src.replace(/\\/g, '/');
+  el.innerHTML = `<img src="${disp}" style="width:100%;height:100%;object-fit:cover;border-radius:10px">`;
+}
+function clearCoverPreview() {
+  $('addCover').value = '';
+  renderCoverPreview('');
+}
+async function confirmAdd() {
+  const name = val('addName'), exe = val('addExe');
+  if (!name || !exe) { showToast('请填写名称和启动程序'); return; }
+  showLoading(editId ? '正在保存...' : '正在添加游戏...');
+  const payload = {
+    name, exe,
+    body: val('addBody'),
+    launcher: val('addLauncher') || null,
+    tags: val('addTags'),
+    cover: val('addCover') || null,
+  };
+  try {
+    const r = editId
+      ? await api.edit_game({ id: editId, ...payload })
+      : await api.add_game(payload);
+    if (r.ok) {
+      showToast(editId ? '已保存' : `已添加：${name}`);
+      closeAddDialog();
+      await reload();
+    } else {
+      showToast('失败：' + (r.error || ''));
+    }
+  } catch (e) { showToast('出错：' + e); }
+}
+
+/* ===== 右键菜单 ===== */
+function showTileMenu(id, name) {
+  ctxId = id;
+  const m = $('ctxMenu');
+  const g = state.games.find(x => x.id === id);
+  const hasLauncher = !!(g && g.launcher_path);
+  // 仅配置了启动器的游戏才显示「检查启动器更新」（无启动器则自动隐藏该项）
+  m.innerHTML = `
+    <div class="ctx-item" onclick="ctxEdit()">✏️ 编辑</div>
+    <div class="ctx-item" onclick="ctxOpenFolder()">📁 打开所在目录</div>
+    ${hasLauncher ? `<div class="ctx-item" onclick="ctxCheckUpdate()">🔄 检查启动器更新</div>` : ''}
+    <div class="ctx-item danger" onclick="ctxHide()">🙈 隐藏</div>
+    <div class="ctx-item danger" onclick="ctxDelete()">🗑️ 删除</div>
+  `;
+  m.classList.add('show');
+  const h = m.offsetHeight || 200;
+  m.style.left = Math.min(event.clientX, window.innerWidth - 180) + 'px';
+  m.style.top = Math.min(event.clientY, window.innerHeight - h - 8) + 'px';
+}
+function closeCtx() { $('ctxMenu').classList.remove('show'); ctxId = null; }
+async function ctxEdit() {
+  const id = ctxId; closeCtx();
+  if (id == null) return;
+  const g = state.games.find(x => x.id === id);
+  if (g) openAddDialog(g);
+}
+async function ctxOpenFolder() {
+  const id = ctxId; closeCtx();
+  if (id == null) return;
+  try { const r = await api.open_folder(id); if (!r.ok) showToast('无法打开目录'); } catch(e){ showToast('出错：'+e); }
+}
+async function ctxHide() {
+  const id = ctxId; closeCtx();
+  if (id == null) return;
+  try {
+    await api.hide_games([id]);
+    showToast('已隐藏');
+    await reload();
+  } catch(e){ showToast('出错：'+e); }
+}
+async function ctxDelete() {
+  const id = ctxId; closeCtx();
+  if (id == null) return;
+  const g = state.games.find(x => x.id === id);
+  if (!confirm(`确定彻底删除「${g ? g.name : ''}」吗？此操作不可恢复！`)) return;
+  showLoading('正在删除...', 800);
+  try {
+    const r = await api.delete_game(id);
+    if (r.ok) { showToast('已删除'); await reload(); }
+    else showToast('删除失败');
+  } catch(e){ showToast('删除出错：'+e); }
+}
+async function ctxCheckUpdate() {
+  const id = ctxId; closeCtx();
+  if (id == null) return;
+  const g = state.games.find(x => x.id === id);
+  showLoading('正在通过启动器检查更新...', 1200);
+  try {
+    const r = await api.check_update(id);
+    if (r.ok) {
+      if (g) { g.overdue = false; g.last_update_check = new Date().toISOString().slice(0,19).replace('T',' '); }
+      state.updateNeeded = Math.max(0, (state.updateNeeded || 0) - 1);
+      renderGrid(); renderBottom();
+      showToast(`✅ 已检查更新：${g ? g.name : ''}`);
+    } else {
+      showToast(r.detail || '检查失败');
+    }
+  } catch (e) { showToast('出错：' + e); }
+}
+
+/* ===== 更新检查面板 ===== */
+function openUpdatePanel() {
+  const list = state.games.filter(g => g.overdue);
+  if (list.length === 0) { showToast('当前没有待检查更新的游戏'); return; }
+  renderUpdatePanelList(list);
+  const ab = $('updateAllBtn'); if (ab) ab.disabled = list.length === 0;
+  $('updatePanel').classList.add('show');
+}
+function renderUpdatePanelList(list) {
+  const el = $('updatePanelList');
+  if (!list.length) { el.innerHTML = `<div class="empty-state"><p>🎉 没有待检查更新的游戏</p></div>`; return; }
+  el.innerHTML = list.map(g => {
+    const last = g.last_update_check ? String(g.last_update_check).split(' ')[0] : '从未';
+    const cycle = (g.update_remind_days && g.update_remind_days > 0) ? `每 ${g.update_remind_days} 天` : '已关闭提醒';
+    return `<div class="update-row" data-id="${g.id}">
+      <div class="update-row-main">
+        <div class="update-row-name">${escapeHtml(g.name)}</div>
+        <div class="update-row-meta">上次检查：${last} · ${cycle}</div>
+      </div>
+      <button class="btn" onclick="checkUpdateFromPanel(${g.id})">检查</button>
+    </div>`;
+  }).join('');
+}
+function closeUpdatePanel() { $('updatePanel').classList.remove('show'); }
+async function checkUpdateFromPanel(id) {
+  const g = state.games.find(x => x.id === id);
+  try {
+    const r = await api.check_update(id);
+    if (r.ok) {
+      if (g) { g.overdue = false; g.last_update_check = new Date().toISOString().slice(0,19).replace('T',' '); }
+      state.updateNeeded = Math.max(0, (state.updateNeeded || 0) - 1);
+      renderGrid(); renderBottom();
+      const row = document.querySelector(`.update-row[data-id="${id}"]`);
+      if (row) row.remove();
+      if (state.updateNeeded === 0) closeUpdatePanel();
+      showToast(`✅ 已检查更新：${g ? g.name : ''}`);
+    } else {
+      showToast(r.detail || '检查失败');
+    }
+  } catch (e) { showToast('出错：' + e); }
+}
+async function checkAllUpdates() {
+  const list = state.games.filter(g => g.overdue);
+  if (!list.length) { closeUpdatePanel(); return; }
+  showLoading('正在批量检查更新...', 1500);
+  let done = 0;
+  for (const g of list) {
+    try {
+      const r = await api.check_update(g.id);
+      if (r.ok) { g.overdue = false; g.last_update_check = new Date().toISOString().slice(0,19).replace('T',' '); done++; }
+    } catch (e) { /* 单个失败不影响其余 */ }
+  }
+  state.updateNeeded = Math.max(0, (state.updateNeeded || 0) - done);
+  renderGrid(); renderBottom();
+  closeUpdatePanel();
+  showToast(`✅ 已检查 ${done} 个游戏的更新`);
+}
+document.addEventListener('click', e => {
+  const m = $('ctxMenu');
+  if (m.classList.contains('show') && !m.contains(e.target) && !e.target.closest('.tile-menu')) {
+    m.classList.remove('show');
+  }
+});
+
+/* ===== 设置 ===== */
+function openSettings() {
+  $('settingTheme').value = state.settings.theme || 'dark';
+  $('settingCols').value = state.settings.grid_columns || 5;
+  $('topCheck').checked = !!state.settings.always_on_top;
+  $('settingsOverlay').classList.add('show');
+}
+function closeSettings() { $('settingsOverlay').classList.remove('show'); }
+async function saveSettings() {
+  showLoading('正在保存设置...', 700);
+  try {
+    const s = await api.save_settings({
+      theme: val('settingTheme'),
+      grid_columns: parseInt(val('settingCols'), 10),
+      always_on_top: $('topCheck').checked,
+    });
+    state.settings = s;
+    applyTheme(s.theme); applyColumns(s.grid_columns);
+    closeSettings();
+    showToast('✅ 设置已保存');
+  } catch (e) { showToast('保存失败：' + e); }
+}
+$('settingTheme').addEventListener('change', () => applyTheme(val('settingTheme')));
+$('settingCols').addEventListener('input', () => applyColumns(val('settingCols')));
+$('addName').addEventListener('input', updateAddButtonState);
+$('addExe').addEventListener('input', updateAddButtonState);
+$('addCover').addEventListener('input', function(){ renderCoverPreview(this.value.trim()); });
+
+/* ===== 统计 ===== */
+let statsState = { view:'month', year:new Date().getFullYear(), month:new Date().getMonth()+1, selected:null, streak:null };
+const STATS_COUNTS = {};
+const STATS_DETAILS = {};
+
+function _color_for(cnt){
+  if (cnt <= 0) return 'var(--cal-empty)';
+  if (cnt === 1) return 'oklch(88% 0.09 60)';
+  if (cnt === 2) return 'oklch(80% 0.13 55)';
+  if (cnt === 3) return 'oklch(70% 0.17 45)';
+  return 'oklch(60% 0.20 38)';
+}
+async function openStats(){
+  $('statsOverlay').classList.add('show');
+  const now = new Date();
+  statsState.view = 'month';
+  statsState.year = now.getFullYear();
+  statsState.month = now.getMonth() + 1;
+  statsState.selected = _iso(now);   // 默认选中今天，直接进入即显示今日明细
+  try { statsState.streak = await api.stats(); } catch(e){ statsState.streak = null; showToast('统计加载失败：'+e); }
+  try { await renderStatsView(); }
+  catch(e){ showToast('日历加载失败：'+e); console.error(e); }
+}
+function closeStats(){ $('statsOverlay').classList.remove('show'); }
+
+async function renderStatsView(){
+  const body = $('statsBody');
+  if (!body) return;
+  body.innerHTML = '';
+  if (statsState.view === 'year') { body.appendChild(await buildYearView()); return; }
+  body.appendChild(await buildMonthView());
+}
+
+async function buildMonthView(){
+  const wrap = document.createElement('div');
+  wrap.style.padding = '6px 4px 2px';
+  // 拉取当月数据
+  let md = {counts:{}, details:{}};
+  try { md = await api.month_data(statsState.year, statsState.month); }
+  catch(e){ console.error(e); showToast('当月数据加载失败：'+e); }
+  Object.assign(STATS_COUNTS, md.counts || {});
+  Object.assign(STATS_DETAILS, md.details || {});
+
+  const streakData = statsState.streak || {};
+  const streak = document.createElement('div');
+  streak.className = 'streak-card';
+  streak.innerHTML = `
+    <div><div class="streak-num">${streakData.current_streak ?? 0}</div><div class="streak-label">当前连续天数</div></div>
+    <div><div class="streak-num">${streakData.longest_streak ?? 0}</div><div class="streak-label">最长连续</div></div>
+    <div><div class="streak-num">${streakData.total_active_days ?? 0}</div><div class="streak-label">活跃天数</div></div>
+    <div><div class="streak-num">${streakData.total_launches ?? 0}</div><div class="streak-label">总启动次数</div></div>`;
+  wrap.appendChild(streak);
+
+  const nav = document.createElement('div'); nav.className = 'cal-nav';
+  const prev = document.createElement('button'); prev.className='icon-btn'; prev.innerHTML='‹'; prev.title='上个月';
+  prev.onclick = () => _changeMonth(-1);
+  const title = document.createElement('span'); title.className='cal-month-title';
+  title.textContent = `${statsState.year}年${String(statsState.month).padStart(2,'0')}月`;
+  title.onclick = () => { statsState.view='year'; renderStatsView(); };
+  const next = document.createElement('button'); next.className='icon-btn'; next.innerHTML='›'; next.title='下个月';
+  next.onclick = () => _changeMonth(1);
+  nav.append(prev, title, next); wrap.appendChild(nav);
+
+  const hint = document.createElement('div');
+  hint.style.cssText = 'text-align:center;font-size:12px;color:var(--text-secondary);margin-bottom:6px';
+  hint.textContent = '点击日期查看当天明细'; wrap.appendChild(hint);
+
+  const grid = document.createElement('div'); grid.className='cal-grid';
+  ['日','一','二','三','四','五','六'].forEach(h => {
+    const c = document.createElement('div'); c.className='cal-head'; c.textContent=h; grid.appendChild(c);
+  });
+  const cal = new Calendar(statsState.year, statsState.month);
+  cal.weeks().forEach(w => w.forEach(d => {
+    const cell = document.createElement('div'); cell.className='cal-cell';
+    if (!d.inMonth) { cell.classList.add('empty'); grid.appendChild(cell); return; }
+    const iso = d.iso;
+    const cnt = STATS_COUNTS[iso] || 0;
+    cell.textContent = String(d.day);
+    cell.style.background = _color_for(cnt);
+    cell.title = `${iso}：玩了 ${cnt} 个游戏`;
+    if (d.isToday) cell.classList.add('today');
+    if (statsState.selected === iso) cell.classList.add('sel');
+    cell.onclick = () => _selectDay(iso);
+    grid.appendChild(cell);
+  }));
+  wrap.appendChild(grid);
+
+  const legend = document.createElement('div'); legend.className='cal-legend';
+  legend.innerHTML = `<span>少</span>
+    <span class="cal-swatch" style="background:${_color_for(0)}"></span>
+    <span class="cal-swatch" style="background:${_color_for(1)}"></span>
+    <span class="cal-swatch" style="background:${_color_for(2)}"></span>
+    <span class="cal-swatch" style="background:${_color_for(4)}"></span>
+    <span>多</span>`;
+  wrap.appendChild(legend);
+
+  const detail = document.createElement('div'); detail.className='detail-panel'; detail.id='statsDetail';
+  _fillDayDetail(detail, statsState.selected);
+  wrap.appendChild(detail);
+  return wrap;
+}
+
+async function buildYearView(){
+  const wrap = document.createElement('div'); wrap.style.padding='6px 4px 2px';
+  const title = document.createElement('div');
+  title.style.cssText='font-size:18px;font-weight:700;text-align:center;margin-bottom:8px';
+  title.textContent = `${statsState.year} 年`; wrap.appendChild(title);
+
+  const grid = document.createElement('div'); grid.className='year-grid';
+  for (let m=1; m<=12; m++){
+    let counts = {};
+    try { const md = await api.month_data(statsState.year, m); counts = md.counts || {}; }
+    catch(e){ console.error(e); }
+    const card = document.createElement('div'); card.className='month-card';
+    const name = document.createElement('div'); name.className='month-card-name'; name.textContent=`${m}月`;
+    const mini = document.createElement('div'); mini.className='month-mini-cal';
+    const cal = new Calendar(statsState.year, m);
+    cal.weeks().forEach(w => w.forEach(d => {
+      const c = document.createElement('div'); c.className='mcell'; c.style.borderRadius='2px';
+      if (!d.inMonth){ c.style.background='transparent'; mini.appendChild(c); return; }
+      const iso = d.iso; const cnt = counts[iso] || 0;
+      c.style.background = _color_for(cnt); c.title = `${iso}：${cnt}`;
+      c.onclick = () => { statsState.month=m; statsState.view='month'; statsState.selected=iso; renderStatsView(); };
+      mini.appendChild(c);
+    }));
+    card.append(name, mini);
+    card.onclick = () => { statsState.month=m; statsState.view='month'; statsState.selected=null; renderStatsView(); };
+    grid.appendChild(card);
+  }
+  wrap.appendChild(grid); return wrap;
+}
+
+function _changeMonth(delta){
+  let m = statsState.month + delta, y = statsState.year;
+  if (m>12){ m=1; y+=1; } if (m<1){ m=12; y-=1; }
+  statsState.year=y; statsState.month=m; statsState.selected=null;
+  renderStatsView();
+}
+function _selectDay(iso){ statsState.selected=iso; renderStatsView(); }
+function _fillDayDetail(container, iso){
+  container.innerHTML='';
+  if (!iso){ container.innerHTML='<div class="detail-empty">点击上方日期，查看当天玩了哪些游戏。</div>'; return; }
+  const d = dateFromISO(iso);
+  const header = document.createElement('div');
+  header.style.cssText='font-size:13px;font-weight:700;margin-bottom:6px';
+  header.textContent = `${iso}  ${['周一','周二','周三','周四','周五','周六','周日'][d.getDay()]}`;
+  container.appendChild(header);
+  const items = STATS_DETAILS[iso] || [];
+  if (!items.length){ const e=document.createElement('div'); e.className='detail-empty'; e.textContent='该日无游玩记录'; container.appendChild(e); return; }
+  items.forEach(g=>{
+    const row=document.createElement('div'); row.className='detail-item';
+    row.innerHTML=`<span class="detail-dot" style="background:var(--accent)"></span>
+      <span style="flex:1;font-weight:600">${escapeHtml(g.name)}</span>
+      <span>×${g.count} 次</span>
+      <span style="color:var(--text-secondary)">${g.last_time?String(g.last_time).substring(11,16):''}</span>`;
+    container.appendChild(row);
+    const tags=document.createElement('div'); tags.style.cssText='display:flex;gap:4px;flex-wrap:wrap;margin-bottom:6px';
+    (g.tags||[]).forEach(t=>{ const s=document.createElement('span'); s.className='tag-chip'; s.textContent=t; tags.appendChild(s); });
+    container.appendChild(tags);
+  });
+}
+
+class Calendar{
+  constructor(year, month){
+    this.year=year; this.month=month;
+    const first=new Date(year, month-1, 1);
+    const start=new Date(first);
+    start.setDate(first.getDate() - ((first.getDay()+6)%7));
+    this.weeks=()=>{
+      const out=[]; const cursor=new Date(start);
+      for(let r=0;r<6;r++){
+        const week=[];
+        for(let c=0;c<7;c++){
+          const cur=new Date(cursor);
+          week.push({ year:cur.getFullYear(), month:cur.getMonth()+1, day:cur.getDate(),
+            iso:_iso(cur), inMonth:cur.getMonth()===month-1 && cur.getFullYear()===year,
+            isToday:_isToday(cur) });
+          cursor.setDate(cursor.getDate()+1);
+        }
+        if(week.every(d=>!d.inMonth && d.day!==1 && new Date(year,month-1,1).getDay()!==1)) { /* keep */ }
+        out.push(week);
+      }
+      return out;
+    };
+  }
+}
+function _iso(d){ return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
+function _isToday(d){ const t=new Date(); return d.getDate()===t.getDate()&&d.getMonth()===t.getMonth()&&d.getFullYear()===t.getFullYear(); }
+function dateFromISO(iso){ const [y,m,d]=iso.split('-').map(Number); return new Date(y,m-1,d); }
+
+/* ===== 拖拽添加 ===== */
+let dragDepth = 0;
+window.addEventListener('dragenter', e => { e.preventDefault(); dragDepth++; $('dragOverlay').classList.add('show'); });
+window.addEventListener('dragover', e => { e.preventDefault(); });
+window.addEventListener('dragleave', e => { e.preventDefault(); dragDepth=Math.max(0,dragDepth-1); if(dragDepth===0) $('dragOverlay').classList.remove('show'); });
+window.addEventListener('drop', async e => {
+  e.preventDefault(); dragDepth=0; $('dragOverlay').classList.remove('show');
+  const files=[...(e.dataTransfer&&e.dataTransfer.files||[])];
+  let added=0;
+  for(const f of files){
+    const p = f.path || (f.name ? null : null);
+    if (p && String(p).toLowerCase().endsWith('.exe')){
+      try { const r = await api.add_game({ name:String(f.name).replace(/\.exe$/i,''), exe:p }); if(r.ok) added++; }
+      catch(err){ console.error(err); }
+    }
+  }
+  if (added){ showToast(`已添加 ${added} 个游戏`); await reload(); }
+});
+
+renderGrid();
+</script>
+</body>
+</html>
