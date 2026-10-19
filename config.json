@@ -17,10 +17,6 @@
     "tile_width": 180,
     "tile_height": 220
   },
-  "scan_directories": [
-    "D:/Games",
-    "E:/SteamLibrary/steamapps/common"
-  ],
   "exclude_patterns": [
     "uninstall",
     "unins",
