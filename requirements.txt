@@ -1,0 +1,20 @@
+# ANGEL GAME 运行时依赖
+#
+# 安装：
+#     python -m venv .venvs\angel_game
+#     .venvs\angel_game\Scripts\python.exe -m pip install -r requirements.txt
+#
+# 注意：不要加 --only-binary :all: —— pywebview 依赖的 proxy_tools 只有 sdist，
+# 加了该参数会让 pip 找不到依赖并回退遍历所有历史版本，CPU 空转很久。
+
+# GUI 外壳（必须 4.x+：main.py 用到 create_window(maximized=) 与 win.events.*）
+pywebview==6.2.1
+
+# 图标提取 / 默认图标绘制（icon_extractor.py 硬依赖 PIL，无导入保护）
+pillow
+
+# exe 图标提取(win32gui) 与「激活已有窗口」(win32gui/win32con)
+pywin32
+
+# 打包（仅构建期需要，运行不需要）
+pyinstaller

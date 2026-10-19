@@ -1,0 +1,47 @@
+# ---- 虚拟环境（47 MB，含全部 DLL，绝不提交）----
+.venvs/
+.venv/
+venv/
+
+# ---- PyInstaller 构建产物 ----
+# build/ 是中间产物（含一份老 onedir，47 MB）
+# dist/  是最终产物（onedir 44 MB + onefile 21 MB）
+build/
+dist/
+*.manifest
+*.pkg
+
+# ---- 运行期生成的用户数据 ----
+# data/ 下是 SQLite 库（含 -wal/-shm）与扫描出来的游戏图标，
+# 属于本机用户数据，不应进仓库
+data/
+# 启动历史
+history/
+# 窗口几何（UI 状态）
+window_geometry.json
+# dotnet_bootstrap 在程序目录写的运行时配置
+pywebview.runtimeconfig.json
+
+# ---- 日志与调试 ----
+*.log
+angel_debug.log*
+
+# ---- Python 缓存 ----
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# ---- 编辑器 / 系统 ----
+.vscode/
+.idea/
+*.swp
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ---- 其它 ----
+*.bak
+*.tmp

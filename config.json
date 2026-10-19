@@ -1,0 +1,51 @@
+{
+  "update_check": {
+    "default_remind_days": 3,
+    "default_launch_mode": "direct"
+  },
+  "hook": {
+    "enabled": true
+  },
+  "window_behavior": {
+    "close_action": "exit",
+    "start_minimized": false,
+    "always_on_top": false
+  },
+  "ui": {
+    "theme": "light",
+    "grid_columns": 5,
+    "tile_width": 180,
+    "tile_height": 220
+  },
+  "scan_directories": [
+    "D:/Games",
+    "E:/SteamLibrary/steamapps/common"
+  ],
+  "exclude_patterns": [
+    "uninstall",
+    "unins",
+    "UnityCrashHandler",
+    "crashreport",
+    "setup",
+    "install",
+    "vcredist_x86",
+    "vcredist_x64"
+  ],
+  "exclude_paths": [
+    "redist",
+    "_CommonRedist",
+    "DirectX",
+    "vcredist",
+    "dotnet"
+  ],
+  "max_scan_depth": 4,
+  "launcher_detection": {
+    "launcher_name_patterns": [
+      "launcher",
+      "启动器",
+      "launch",
+      "start"
+    ],
+    "auto_set_direct_launch": true
+  }
+}
